@@ -51,7 +51,6 @@ public class ECKeyManagement {
         );
     }
 
-    // TODO: BUG FIX: decrypted keystore file does not return correct private key
     public static Credentials decryptCredentials(String keystorePath, String walletPassword) throws Exception {
         return WalletUtils.loadCredentials(walletPassword, keystorePath);
     }
@@ -62,7 +61,6 @@ public class ECKeyManagement {
 
         // Generate a random EC Key Pair
 		ECKeyPair keyPair = generateECKeyPair();
-        System.out.println(keyPair);
 
         // Derive private key from the EC Key Pair
         BigInteger privateKey = keyPair.getPrivateKey();
@@ -80,6 +78,13 @@ public class ECKeyManagement {
         // Generate keystore file for the EC Key Pair
         String walletFileName = generateKeystoreJSON(walletPassword, walletPath, keyPair);
         System.out.println(walletFileName);
+
+        String keystorePath = walletPath + File.separator + walletFileName;
+
+        // Unlock keystore
+        ECKeyPair derivedKeys = decryptCredentials(keystorePath, walletPassword).getEcKeyPair();
+        System.out.println("Unlocked Private key: " + derivedKeys.getPrivateKey().toString(16));
+        System.out.println("Unlocked Public Key " + derivedKeys.getPublicKey().toString(16));
 
 		// Sign message
 		String msg = "TEST";
