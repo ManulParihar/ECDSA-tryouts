@@ -1,8 +1,8 @@
 package com.test;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-
 import org.web3j.crypto.*;
 import org.web3j.utils.Numeric;
 
@@ -22,7 +22,7 @@ public class ECKeyManagement {
         String r = Numeric.toHexString(signature.getR());
         String s = Numeric.toHexString(signature.getS()).substring(2);
         String v = Numeric.toHexString(signature.getV()).substring(2);
-        System.out.println(r + "    " + s + "    " + v);
+
         return r + s + v;
     }
 
@@ -42,21 +42,48 @@ public class ECKeyManagement {
         return "0x" + Keys.getAddress((publicKey));
     }
 
-	public static void main(String[] args) throws Exception {
-		// Generate a random private key
-		ECKeyPair keyPair = generateECKeyPair();
-        BigInteger publicKey = keyPair.getPublicKey();
-        BigInteger privateKey = keyPair.getPrivateKey();
-        String address = deriveAddress(publicKey);
+    public static String generateKeystoreJSON(String walletPassword, String storagePath, ECKeyPair ecKeyPair) throws Exception {
+        return WalletUtils.generateWalletFile(
+            walletPassword,
+            ecKeyPair,
+            new File(storagePath),
+            true
+        );
+    }
 
-		System.out.println("Private key (256 bits): " + publicKey.toString(16));
-		System.out.println("Public key (512 bits): " + privateKey.toString(16));
-		System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
+    // TODO: BUG FIX: decrypted keystore file does not return correct private key
+    public static Credentials decryptCredentials(String keystorePath, String walletPassword) throws Exception {
+        return WalletUtils.loadCredentials(walletPassword, keystorePath);
+    }
+
+	public static void main(String[] args) throws Exception {
+		String walletPassword = "Test123";
+        String walletPath = "./src/main/java/com/test";
+
+        // Generate a random EC Key Pair
+		ECKeyPair keyPair = generateECKeyPair();
+        System.out.println(keyPair);
+
+        // Derive private key from the EC Key Pair
+        BigInteger privateKey = keyPair.getPrivateKey();
+        System.out.println("Private key (256 bits): " + privateKey.toString(16));
+
+        // Derive public key from the EC Key Pair
+        BigInteger publicKey = keyPair.getPublicKey();
+        System.out.println("Public key (512 bits): " + publicKey.toString(16));
+        System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
+
+        // Derive address from the public key
+        String address = deriveAddress(publicKey);
         System.out.println("Address: " + address);
+
+        // Generate keystore file for the EC Key Pair
+        String walletFileName = generateKeystoreJSON(walletPassword, walletPath, keyPair);
+        System.out.println(walletFileName);
 
 		// Sign message
 		String msg = "TEST";
         String signedMessage = signMessage(msg, keyPair);
         System.out.println("SignedMessage: " + signedMessage);
-	}
+    }
 }
