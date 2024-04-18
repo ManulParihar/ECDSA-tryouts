@@ -8,7 +8,7 @@ import org.web3j.utils.Numeric;
 
 public class ECKeyManagement {
 
-	static String compressPubKey(BigInteger pubKey) {
+	static String compressPublicKey(BigInteger pubKey) {
 		String pubKeyYPrefix = pubKey.testBit(0) ? "03" : "02";
 		String pubKeyHex = pubKey.toString(16);
 		String pubKeyX = pubKeyHex.substring(0, 64);
@@ -26,18 +26,32 @@ public class ECKeyManagement {
         return r + s + v;
     }
 
+    public static ECKeyPair generateECKeyPair() throws Exception {
+        try {
+            // Generate a random private key
+            BigInteger privateKey = Keys.createEcKeyPair().getPrivateKey();
+            BigInteger publicKey = Sign.publicKeyFromPrivate(privateKey);
+
+            return new ECKeyPair(privateKey, publicKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String deriveAddress(BigInteger publicKey) {
+        return "0x" + Keys.getAddress((publicKey));
+    }
+
 	public static void main(String[] args) throws Exception {
-        
 		// Generate a random private key
-        BigInteger privKey = Keys.createEcKeyPair().getPrivateKey();
+		ECKeyPair keyPair = generateECKeyPair();
+        BigInteger publicKey = keyPair.getPublicKey();
+        BigInteger privateKey = keyPair.getPrivateKey();
+        String address = deriveAddress(publicKey);
 
-		BigInteger pubKey = Sign.publicKeyFromPrivate(privKey);
-		ECKeyPair keyPair = new ECKeyPair(privKey, pubKey);
-        String address = Keys.getAddress(pubKey);
-
-		System.out.println("Private key (256 bits): " + privKey.toString(16));
-		System.out.println("Public key (512 bits): " + pubKey.toString(16));
-		System.out.println("Public key (compressed): " + compressPubKey(pubKey));
+		System.out.println("Private key (256 bits): " + publicKey.toString(16));
+		System.out.println("Public key (512 bits): " + privateKey.toString(16));
+		System.out.println("Public key (compressed): " + compressPublicKey(publicKey));
         System.out.println("Address: " + address);
 
 		// Sign message
